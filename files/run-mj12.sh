@@ -53,7 +53,7 @@ OPT_UPSTREAM="1000"
 OPT_WEBSERVER=""
 
 function parseoption() {
-	echo -n "${*}" | sed -r 's/^--?[a-z]+=?//'
+	echo -n "${*}" | sed -r 's/^(--[a-z]+=|--[a-z]+$|-[a-z]=|-[a-z])//'
 }
 function parseoptions() {
 	while [ "x${#}" != "x0" ]; do
