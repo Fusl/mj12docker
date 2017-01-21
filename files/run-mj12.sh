@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+function cleanup() {
+	echo "Cleaning up..."
+	kill -SIGKILL "${1}"
+}
 function printhelp() {
 cat << EOF
 Usage: docker run --rm -d -m 512M fusl/mj12node -n... -p... -e... [OPTIONS]
@@ -134,8 +138,8 @@ parseoptions "${@}"
 if test -z "${OPT_USERNAME// }"            ||
    test -z "${OPT_PASSWORD// }"            ||
    test -z "${OPT_EMAIL// }"               ||
- ! is_between "${OPT_WORKERS}"    0 1000   ||
- ! is_between "${OPT_BUCKETS}"    0 101    ||
+ ! is_between "${OPT_WORKERS}"    0 501    ||
+ ! is_between "${OPT_BUCKETS}"    0 201    ||
  ! is_between "${OPT_DOWNSTREAM}" 0 100001 ||
  ! is_between "${OPT_UPSTREAM}"   0 100001; then
 	printhelp
@@ -154,8 +158,6 @@ MJ12_OPT_email="--email=${OPT_EMAIL}"
 MJ12_OPT_exthelper="--exthelper"
 MJ12_OPT_identitynodename="--identitynodename=docker${HOSTNAME}"
 MJ12_OPT_maxopenbuckets="--maxopenbuckets=${OPT_BUCKETS}"
-MJ12_OPT_maxopenbuckets="--maxopenbuckets=${OPT_BUCKETS}"
-MJ12_OPT_maxworkers="--maxworkers=${OPT_WORKERS}"
 MJ12_OPT_maxworkers="--maxworkers=${OPT_WORKERS}"
 MJ12_OPT_password="--password=${OPT_PASSWORD}"
 MJ12_OPT_peernodename="--peernodename=docker${HOSTNAME}"
@@ -173,8 +175,6 @@ exec -a MJ12su su -c 'exec -a MJ12node mono MJ12nodeMono.exe "${@}"' mj12 -- \
 	"${MJ12_OPT_exthelper}" \
 	"${MJ12_OPT_identitynodename}" \
 	"${MJ12_OPT_maxopenbuckets}" \
-	"${MJ12_OPT_maxopenbuckets}" \
-	"${MJ12_OPT_maxworkers}" \
 	"${MJ12_OPT_maxworkers}" \
 	"${MJ12_OPT_password}" \
 	"${MJ12_OPT_peernodename}" \
@@ -182,6 +182,7 @@ exec -a MJ12su su -c 'exec -a MJ12node mono MJ12nodeMono.exe "${@}"' mj12 -- \
 	${MJ12_OPT_startweb} \
 &
 pid="${!}"
-trap "kill -SIGKILL ${pid}" HUP INT QUIT KILL TERM
+trap "cleanup ${pid}" HUP INT QUIT KILL TERM
 wait "${pid}"
 exit 0
+
