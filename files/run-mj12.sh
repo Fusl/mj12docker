@@ -2,49 +2,186 @@
 
 function printhelp() {
 cat << EOF
-Usage: docker run -d -i -m 512M -t fusl/mj12node <arguments>
+Usage: docker run --rm -d -m 512M fusl/mj12node -n... -p... -e... [OPTIONS]
 
-You *need* to run the docker container using the docker args as above,
+You *need* to run the docker container using the docker options as above,
 otherwise MJ12node starts in foreground and you can only kill it using
 'docker kill <container id>' from another terminal (Ctrl-C won't work).
 
-Arguments: --username=<username>  -  mandatory
-           --password=<password>  -  mandatory
-           --email=<email>        -  mandatory
-           --maxworkers=<max num of workers (1)>
-           --maxopenbuckets=<max num of open buckets (1)>
-           --connection-downstream=<download bandwidth in kbit/s (1000)>
-           --connection-upstream=<upload bandwidth in kbit/s (1000)>
-           --connection-downstream-limit=<download bandwidth MJ12 is
-                                          allowed to use (1000)>
-           --connection-upstream-limit=<upload bandwidth MJ12 is allowed
-                                        to use (1000)>
+  -h, --help       Print this help text
+  -n, --username   Account username
+  -p, --password   Account password
+  -e, --email      Account email address
+  -w, --workers    Maximum number of workers [1]
+  -b, --buckets    Maximum number of open buckets [1]
+  -d, --downstream Available download bandwidth for Majestic-12 in kbit/s [1000]
+  -u, --upstream   Available upload bandwidth for Majestic-12 in kbit/s [1000]
+  -s, --webserver  Enable webserver on port 1088
 
-Arguments marked with * are mandatory
 EOF
 }
-if [ "x${1}" == "x--help" ]; then
+function printlicense() {
+cat << EOF
+The Majestic-12 binaries and files included with the Docker image distributed at
+  https://hub.docker.com/r/fusl/mj12node/ are copyright of the Majestic-12 Ltd.:
+    Faraday Wharf
+    Holt Street
+    Birmingham Science Park, Aston
+    Birmingham
+    B7 4BB
+    United Kingdom
+  Re-distribution of those files is STRICTLY FORBIDDEN.
+
+This software package is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE.
+
+EOF
+}
+
+OPT_USERNAME=""
+OPT_PASSWORD=""
+OPT_EMAIL=""
+OPT_WORKERS="1"
+OPT_BUCKETS="1"
+OPT_DOWNSTREAM="1000"
+OPT_UPSTREAM="1000"
+OPT_WEBSERVER=""
+
+function parseoption() {
+	echo -n "${*}" | sed -r 's/^--?[a-z]+=?//'
+}
+function parseoptions() {
+	while [ "x${#}" != "x0" ]; do
+		local value=""
+		case "${1}" in
+			-h*|--help|--help=*)
+				printhelp
+				printlicense
+				exit 1
+			;;
+			-n*|--username|--username=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_USERNAME="${value}"
+			;;
+			-p*|--password|--password=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_PASSWORD="${value}"
+			;;
+			-e*|--email|--email=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_EMAIL="${value}"
+			;;
+			-w*|--workers|--workers=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_WORKERS="${value}"
+			;;
+			-b*|--buckets|--buckets=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_BUCKETS="${value}"
+			;;
+			-d*|--downstream|--downstream=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_DOWNSTREAM="${value}"
+			;;
+			-u*|--upstream|--upstream=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_UPSTREAM="${value}"
+			;;
+			-s*|--webserver|--webserver=*)
+				value=$(parseoption "${1}")
+				[ "x${value}" == "x${1}" ] && value=""
+				[ "x${value}" == "x" ] && [ "x${2:0:1}" != "x-" ] && value="${2}" && shift
+				OPT_WEBSERVER="1"
+			;;
+			*)
+				printhelp
+				printlicense
+				exit 1
+			;;
+		esac
+		shift
+	done
+}
+is_int() {
+	case "${*}" in
+		''|*[!0-9]*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+is_between() {
+	if ! is_int "${1}" || test "${1}" "-le" "${2}" || test "${1}" "-ge" "${3}"; then
+		return 1
+	fi
+	return 0
+}
+parseoptions "${@}"
+
+if test -z "${OPT_USERNAME// }"            ||
+   test -z "${OPT_PASSWORD// }"            ||
+   test -z "${OPT_EMAIL// }"               ||
+ ! is_between "${OPT_WORKERS}"    0 1000   ||
+ ! is_between "${OPT_BUCKETS}"    0 101    ||
+ ! is_between "${OPT_DOWNSTREAM}" 0 100001 ||
+ ! is_between "${OPT_UPSTREAM}"   0 100001; then
 	printhelp
-	exit 0
-fi
-provided_username=""
-provided_password=""
-provided_email=""
-for arg in "$@"; do
-	if echo -n "${arg}" | grep -qE -- "^--username="; then
-		provided_username=$(echo -n "${arg}" | sed 's/^--username=//')
-	fi
-	if echo -n "${arg}" | grep -qE -- "^--password="; then
-		provided_password=$(echo -n "${arg}" | sed 's/^--password=//')
-	fi
-	if echo -n "${arg}" | grep -qE -- "^--email="; then
-		provided_email=$(echo -n "${arg}" | sed 's/^--email=//')
-	fi
-done
-if [ "x${provided_username}" == "x" ] || [ "x${provided_password}" == "x" ] || [ "x${provided_email}" == "x" ]; then
-	echo "Missing at least one mandatory argument"
-	printhelp
+	printlicense
 	exit 1
 fi
+
+printlicense
+
+MJ12_OPT_activityperiod="--activityperiod=0"
+MJ12_OPT_connection_downstream="--connection-downstream=${OPT_DOWNSTREAM}"
+MJ12_OPT_connection_downstream_limit="--connection-downstream-limit=100"
+MJ12_OPT_connection_upstream="--connection-upstream=${OPT_UPSTREAM}"
+MJ12_OPT_connection_upstream_limit="--connection-upstream-limit=100"
+MJ12_OPT_email="--email=${OPT_EMAIL}"
+MJ12_OPT_exthelper="--exthelper"
+MJ12_OPT_identitynodename="--identitynodename=docker${HOSTNAME}"
+MJ12_OPT_maxopenbuckets="--maxopenbuckets=${OPT_BUCKETS}"
+MJ12_OPT_maxopenbuckets="--maxopenbuckets=${OPT_BUCKETS}"
+MJ12_OPT_maxworkers="--maxworkers=${OPT_WORKERS}"
+MJ12_OPT_maxworkers="--maxworkers=${OPT_WORKERS}"
+MJ12_OPT_password="--password=${OPT_PASSWORD}"
+MJ12_OPT_peernodename="--peernodename=docker${HOSTNAME}"
+MJ12_OPT_username="--username=${OPT_USERNAME}"
+MJ12_OPT_startweb=$(test "x${OPT_WEBSERVER}" "==" "x1" && echo -n "-s")
+
 cd /home/mj12/MJ12node/
-su -c 'mono MJ12nodeMono.exe --activityperiod=0 --exthelper --identitynodename=docker${HOSTNAME} --peernodename=docker${HOSTNAME} --maxworkers=1 --maxopenbuckets=1 --connection-downstream=1000 --connection-upstream=1000 --connection-downstream-limit=1000 --connection-upstream-limit=1000 "${@}"' mj12 -- "${@}"
+exec -a MJ12su su -c 'exec -a MJ12node mono MJ12nodeMono.exe "${@}"' mj12 -- \
+	"${MJ12_OPT_activityperiod}" \
+	"${MJ12_OPT_connection_downstream}" \
+	"${MJ12_OPT_connection_downstream_limit}" \
+	"${MJ12_OPT_connection_upstream}" \
+	"${MJ12_OPT_connection_upstream_limit}" \
+	"${MJ12_OPT_email}" \
+	"${MJ12_OPT_exthelper}" \
+	"${MJ12_OPT_identitynodename}" \
+	"${MJ12_OPT_maxopenbuckets}" \
+	"${MJ12_OPT_maxopenbuckets}" \
+	"${MJ12_OPT_maxworkers}" \
+	"${MJ12_OPT_maxworkers}" \
+	"${MJ12_OPT_password}" \
+	"${MJ12_OPT_peernodename}" \
+	"${MJ12_OPT_username}" \
+	${MJ12_OPT_startweb} \
+&
+pid="${!}"
+trap "kill -SIGKILL ${pid}" HUP INT QUIT KILL TERM
+wait "${pid}"
+exit 0

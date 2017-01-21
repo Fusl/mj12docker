@@ -1,6 +1,7 @@
 FROM ubuntu:16.04
 MAINTAINER Fusl <fusl@meo.ws>
 COPY files/ /
+EXPOSE 1088
 
 RUN (echo 'APT::Install-Recommends "0";'; echo 'APT::Install-Suggests "0";') > /etc/apt/apt.conf.d/01norecommend
 RUN echo 'deb http://download.mono-project.com/repo/debian wheezy main' > /etc/apt/sources.list.d/mono-xamarin.list
