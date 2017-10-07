@@ -164,8 +164,21 @@ MJ12_OPT_peernodename="--peernodename=docker${HOSTNAME}"
 MJ12_OPT_username="--username=${OPT_USERNAME}"
 MJ12_OPT_startweb=$(test "x${OPT_WEBSERVER}" "==" "x1" && echo -n "-s")
 
+configdate=$(date +%Y-%m-%d)
+
+cat /config.xml.tpl | sed "
+s~{{MJ12node>WebCrawlerCfg:LastCleanUp}}~${configdate}~g;
+s~{{MJ12node>WebCrawlerCfg>Crawling:MaxOpenBuckets}}~${OPT_BUCKETS}~g;
+s~{{MJ12node>IdentityCfg:EmailAddress}}~${OPT_EMAIL}~g;
+s~{{MJ12node>IdentityCfg:NickName}}~${OPT_USERNAME}~g;
+s~{{MJ12node>IdentityCfg:NodeName}}~${HOSTNAME}~g;
+s~{{MJ12node>PeerNodeCfg:NodeName}}~docker${HOSTNAME}~g;
+s~{{MJ12node>Connection:DownStream}}~${OPT_DOWNSTREAM}~g;
+s~{{MJ12node>Connection:UpStream}}~${OPT_UPSTREAM}~g
+" > /home/mj12/MJ12node/config.xml
+
 cd /home/mj12/MJ12node/
-exec -a MJ12su su -c 'exec -a MJ12node mono MJ12nodeMono.exe "${@}"' mj12 -- \
+exec su -c 'exec mono MJ12nodeMono.exe "${@}"' mj12 -- \
 	"${MJ12_OPT_activityperiod}" \
 	"${MJ12_OPT_connection_downstream}" \
 	"${MJ12_OPT_connection_downstream_limit}" \
