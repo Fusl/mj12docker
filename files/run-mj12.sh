@@ -178,7 +178,7 @@ s~{{MJ12node>Connection:UpStream}}~${OPT_UPSTREAM}~g
 " > /home/mj12/MJ12node/config.xml
 
 cd /home/mj12/MJ12node/
-exec su -c 'exec mono MJ12nodeMono.exe "${@}"' mj12 -- \
+su -c 'read _ < /dev/fd/1 | mono MJ12nodeMono.exe "${@}"' mj12 -- \
 	"${MJ12_OPT_activityperiod}" \
 	"${MJ12_OPT_connection_downstream}" \
 	"${MJ12_OPT_connection_downstream_limit}" \
