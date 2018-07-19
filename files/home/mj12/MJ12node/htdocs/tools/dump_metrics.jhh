@@ -36,7 +36,7 @@
 	"FailedURLs_RobotsTXT": "##FailedURLs_RobotsTXT##",
 	"FailedURLs_Timeout": "##FailedURLs_Timeout##",
 	"FreeDiskSpace": "##FreeDiskSpace##",
-	"GzipRequests": "##GzipRequests##",
+	"GzipRequests": ##GzipRequests##,
 	"GzipRequestsRatio": "##GzipRequestsRatio##",
 	"GzipSavedBytesMB": ##GzipSavedBytesMB##,
 	"GzipSavedBytesRatio": "##GzipSavedBytesRatio##",
