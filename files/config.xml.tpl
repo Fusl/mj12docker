@@ -3,7 +3,7 @@
     <Common WorkingPath="data/" PreCacheBuckets="5" />
     <Delays URLsBatchFetchDelay="120" ArchivingDelay="0" URLBucketLoadDelay="100" UploadManagerCheckDelay="15" RobotsTXTDelay="0" RetrievedURLsDelay="0" ParsingLinksWorkSliceDelay="0" />
     <Barrels TempDir="" NewBarrels="barrels/new" OldBarrels="barrels/old" WorkBarrels="barrels/work" FileExtention=".gz" TempFileExtention=".txt" ExternalArchiverPath="" EnableBarrelSorting="false" MinimiseMemoryUsageByCrawlBuffers="false" />
-    <Crawling MaxOpenBuckets="{{MJ12node>WebCrawlerCfg>Crawling:MaxOpenBuckets}}" StartCrawlingIfUploadsLessThan="5" />
+    <Crawling MaxOpenBuckets="{{MJ12node>WebCrawlerCfg>Crawling:MaxOpenBuckets}}" StartCrawlingIfUploadsLessThan="50" />
     <URLs NewURLs="urls/new" OldURLs="urls/old" WorkURLs="urls/work" />
     <Profiles>
     </Profiles>
